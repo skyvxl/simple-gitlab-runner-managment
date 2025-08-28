@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  
+  import { resolve } from "$app/paths";
+
   let runners: any[] = [];
   let formData = {
     url: "",
@@ -16,7 +17,7 @@
 
   async function loadRunners() {
     try {
-      const response = await fetch("/api/runners");
+      const response = await fetch(`${resolve("/api/runners")}`);
       if (response.ok) {
         runners = await response.json();
       }
