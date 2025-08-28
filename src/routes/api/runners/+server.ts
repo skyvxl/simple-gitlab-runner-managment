@@ -12,7 +12,7 @@ interface Runner {
 
 export async function GET() {
   try {
-    const isProd = process.env.GITLAB_RUNNER_MODE === "prod";
+    const isProd = import.meta.env.MODE === "prod";
     const command = isProd ? "gitlab-runner list" : "docker exec gitlab-runner gitlab-runner list";
     const { stdout, stderr } = await execAsync(command);
     // GitLab runner sometimes outputs to stderr instead of stdout
@@ -35,7 +35,7 @@ export async function POST({ request }) {
           .map((t: string) => t.trim())
           .join(",")
       : "";
-    const isProd = process.env.GITLAB_RUNNER_MODE === "prod";
+    const isProd = import.meta.env.MODE === "prod";
 
     let command = isProd
       ? `gitlab-runner register --non-interactive --url "${url}" --registration-token "${token}" --description "${description}" --executor shell`
@@ -53,7 +53,7 @@ export async function POST({ request }) {
 export async function DELETE({ request }) {
   try {
     const { name } = await request.json();
-    const isProd = process.env.GITLAB_RUNNER_MODE === "prod";
+    const isProd = import.meta.env.MODE === "prod";
 
     let command = isProd
       ? `gitlab-runner unregister --name "${name}"`
