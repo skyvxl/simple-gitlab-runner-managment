@@ -12,9 +12,7 @@ interface Runner {
 
 export async function GET() {
   try {
-    const isProd = import.meta.env.MODE === "prod";
-    const command = isProd ? "gitlab-runner list" : "docker exec gitlab-runner gitlab-runner list";
-    const { stdout, stderr } = await execAsync(command);
+    const { stdout, stderr } = await execAsync("gitlab-runner list");
     // GitLab runner sometimes outputs to stderr instead of stdout
     const output = stdout || stderr;
     const runners: Runner[] = parseRunners(output);
@@ -35,11 +33,8 @@ export async function POST({ request }) {
           .map((t: string) => t.trim())
           .join(",")
       : "";
-    const isProd = import.meta.env.MODE === "prod";
 
-    let command = isProd
-      ? `gitlab-runner register --non-interactive --url "${url}" --registration-token "${token}" --description "${description}" --executor shell`
-      : `docker exec gitlab-runner gitlab-runner register --non-interactive --url "${url}" --registration-token "${token}" --description "${description}" --executor shell`;
+    let command = `gitlab-runner register --non-interactive --url "${url}" --registration-token "${token}" --description "${description}" --executor shell`;
     if (tagList) command += ` --tag-list "${tagList}"`;
 
     await execAsync(command);
@@ -53,11 +48,8 @@ export async function POST({ request }) {
 export async function DELETE({ request }) {
   try {
     const { name } = await request.json();
-    const isProd = import.meta.env.MODE === "prod";
 
-    let command = isProd
-      ? `gitlab-runner unregister --name "${name}"`
-      : `docker exec gitlab-runner gitlab-runner unregister --name "${name}"`;
+    let command = `gitlab-runner unregister --name "${name}"`;
 
     await execAsync(command);
     return json({ success: true });
