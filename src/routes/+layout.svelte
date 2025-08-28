@@ -6,6 +6,8 @@
 </script>
 
 <svelte:head>
+  <title>GitLab Runner UI</title>
+  <meta name="description" content="Simple management of GitLab runners with ease." />
   <link rel="icon" href={favicon} />
 </svelte:head>
 
