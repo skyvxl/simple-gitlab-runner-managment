@@ -1,6 +1,6 @@
 ---
-description: 'SvelteKit with TypeScript and Svelte 5 Runes development standards and best practices'
-applyTo: '**/*.svelte, **/*.ts, **/*.js, **/*.scss, **/*.css'
+description: "SvelteKit with TypeScript and Svelte 5 Runes development standards and best practices"
+applyTo: "**/*.svelte, **/*.ts, **/*.js, **/*.scss, **/*.css"
 ---
 
 # SvelteKit + TypeScript + Svelte 5 Runes Development Instructions
@@ -72,6 +72,7 @@ Instructions for building high-quality SvelteKit applications with TypeScript an
 ### Svelte 5 Runes Patterns
 
 **State Rune (`$state`)**
+
 ```typescript
 // Component state
 let count = $state(0);
@@ -79,25 +80,24 @@ let user = $state<User | null>(null);
 
 // Object state with proper typing
 let form = $state({
-  name: '',
-  email: '',
-  age: 0
+  name: "",
+  email: "",
+  age: 0,
 });
 
 // Frozen state for immutable objects
-let config = $state.frozen({ theme: 'dark', locale: 'en' });
+let config = $state.frozen({ theme: "dark", locale: "en" });
 ```
 
 **Derived Rune (`$derived`)**
+
 ```typescript
 // Simple derived value
 let doubled = $derived(count * 2);
 
 // Complex derived with proper typing
 let isValidForm = $derived(() => {
-  return form.name.length > 0 && 
-         form.email.includes('@') && 
-         form.age >= 18;
+  return form.name.length > 0 && form.email.includes("@") && form.age >= 18;
 });
 
 // Async derived (use with caution)
@@ -108,6 +108,7 @@ let userData = $derived.by(async () => {
 ```
 
 **Effect Rune (`$effect`)**
+
 ```typescript
 // Basic effect for side effects
 $effect(() => {
@@ -119,18 +120,19 @@ $effect(() => {
   const interval = setInterval(() => {
     count++;
   }, 1000);
-  
+
   return () => clearInterval(interval);
 });
 
 // Pre-effect for DOM manipulation before updates
 $effect.pre(() => {
   // Runs before DOM updates
-  console.log('About to update DOM');
+  console.log("About to update DOM");
 });
 ```
 
 **Bindable Props (`$bindable`)**
+
 ```typescript
 // Component with bindable prop
 interface Props {
@@ -144,11 +146,12 @@ let { value = $bindable() }: Props = $props();
 ```
 
 **Custom Runes**
+
 ```typescript
 // Custom rune for localStorage
 function useLocalStorage<T>(key: string, defaultValue: T) {
   let storedValue = $state(defaultValue);
-  
+
   // Initialize from localStorage
   $effect(() => {
     const stored = localStorage.getItem(key);
@@ -156,15 +159,19 @@ function useLocalStorage<T>(key: string, defaultValue: T) {
       storedValue = JSON.parse(stored);
     }
   });
-  
+
   // Save to localStorage when value changes
   $effect(() => {
     localStorage.setItem(key, JSON.stringify(storedValue));
   });
-  
+
   return {
-    get value() { return storedValue; },
-    set value(newValue: T) { storedValue = newValue; }
+    get value() {
+      return storedValue;
+    },
+    set value(newValue: T) {
+      storedValue = newValue;
+    },
   };
 }
 
@@ -173,27 +180,33 @@ function useApiData<T>(url: string) {
   let data = $state<T | null>(null);
   let loading = $state(false);
   let error = $state<string | null>(null);
-  
+
   $effect(() => {
     loading = true;
     error = null;
-    
+
     fetch(url)
-      .then(res => res.json())
-      .then(result => {
+      .then((res) => res.json())
+      .then((result) => {
         data = result;
         loading = false;
       })
-      .catch(err => {
+      .catch((err) => {
         error = err.message;
         loading = false;
       });
   });
-  
+
   return {
-    get data() { return data; },
-    get loading() { return loading; },
-    get error() { return error; }
+    get data() {
+      return data;
+    },
+    get loading() {
+      return loading;
+    },
+    get error() {
+      return error;
+    },
   };
 }
 ```
@@ -201,32 +214,35 @@ function useApiData<T>(url: string) {
 ### Migration from Svelte 4 to Svelte 5
 
 **Reactive Statements → Derived Runes**
+
 ```typescript
 // Svelte 4
 let count = 0;
 $: doubled = count * 2;
-$: if (count > 10) console.log('High count!');
+$: if (count > 10) console.log("High count!");
 
 // Svelte 5
 let count = $state(0);
 let doubled = $derived(count * 2);
 $effect(() => {
-  if (count > 10) console.log('High count!');
+  if (count > 10) console.log("High count!");
 });
 ```
 
 **Component State → State Runes**
+
 ```typescript
 // Svelte 4
-let name = '';
+let name = "";
 let items = [];
 
 // Svelte 5
-let name = $state('');
+let name = $state("");
 let items = $state<Item[]>([]);
 ```
 
 **Props with Binding → Bindable Props**
+
 ```typescript
 // Svelte 4
 export let value;
@@ -236,9 +252,10 @@ let { value = $bindable() } = $props();
 ```
 
 **Stores → Runes (for local state)**
+
 ```typescript
 // Svelte 4 (component-level store)
-import { writable } from 'svelte/store';
+import { writable } from "svelte/store";
 const count = writable(0);
 
 // Svelte 5 (use runes instead)
@@ -246,9 +263,10 @@ let count = $state(0);
 ```
 
 **Event Handlers and Lifecycle**
+
 ```typescript
 // Svelte 4
-import { onMount, onDestroy } from 'svelte';
+import { onMount, onDestroy } from "svelte";
 
 onMount(() => {
   // initialization
@@ -261,7 +279,7 @@ onDestroy(() => {
 // Svelte 5 (use effects)
 $effect(() => {
   // initialization
-  
+
   return () => {
     // cleanup
   };
@@ -271,6 +289,7 @@ $effect(() => {
 ### Svelte 5 Advanced Patterns
 
 **Event Handling with Runes**
+
 ```typescript
 // Event handler with state update
 let count = $state(0);
@@ -280,8 +299,8 @@ function handleClick() {
 }
 
 // Event handler with derived validation
-let email = $state('');
-let isValidEmail = $derived(email.includes('@') && email.includes('.'));
+let email = $state("");
+let isValidEmail = $derived(email.includes("@") && email.includes("."));
 
 function handleSubmit() {
   if (isValidEmail) {
@@ -291,6 +310,7 @@ function handleSubmit() {
 ```
 
 **Component Communication**
+
 ```typescript
 // Parent component
 let parentState = $state({ items: [], loading: false });
@@ -304,7 +324,7 @@ interface ChildProps {
 let { items, onAdd }: ChildProps = $props();
 
 // Two-way binding with transformation
-let { value = $bindable('') } = $props();
+let { value = $bindable("") } = $props();
 let transformedValue = $derived(value.toUpperCase());
 
 $effect(() => {
@@ -313,31 +333,33 @@ $effect(() => {
 ```
 
 **Performance Optimization with Runes**
+
 ```typescript
 // Memoized expensive computation
-let input = $state('');
+let input = $state("");
 let expensiveResult = $derived.by(() => {
   if (!input) return null;
   return expensiveComputation(input);
 });
 
 // Debounced state updates
-let searchTerm = $state('');
-let debouncedSearch = $state('');
+let searchTerm = $state("");
+let debouncedSearch = $state("");
 
 $effect(() => {
   const timeoutId = setTimeout(() => {
     debouncedSearch = searchTerm;
   }, 300);
-  
+
   return () => clearTimeout(timeoutId);
 });
 ```
 
 **Context with Runes**
+
 ```typescript
 // Context provider
-import { setContext, getContext } from 'svelte';
+import { setContext, getContext } from "svelte";
 
 interface AppContext {
   theme: string;
@@ -345,20 +367,24 @@ interface AppContext {
 }
 
 function createAppContext() {
-  let theme = $state('light');
-  
+  let theme = $state("light");
+
   const context: AppContext = {
-    get theme() { return theme; },
-    setTheme: (newTheme: string) => { theme = newTheme; }
+    get theme() {
+      return theme;
+    },
+    setTheme: (newTheme: string) => {
+      theme = newTheme;
+    },
   };
-  
-  setContext('app', context);
+
+  setContext("app", context);
   return context;
 }
 
 // Context consumer
 function getAppContext(): AppContext {
-  return getContext('app');
+  return getContext("app");
 }
 ```
 
@@ -462,6 +488,7 @@ function getAppContext(): AppContext {
 ## Best Practices
 
 ### File Structure
+
 ```
 src/
 ├── lib/
