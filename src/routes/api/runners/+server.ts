@@ -1,8 +1,14 @@
 import { json } from "@sveltejs/kit";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { dev } from "$app/environment";
 
 const execAsync = promisify(exec);
+
+// Get the gitlab-runner command based on environment
+const getRunnerCommand = () => {
+  return dev ? "docker exec gitlab-runner gitlab-runner" : "gitlab-runner";
+};
 
 interface Runner {
   name: string;
@@ -12,7 +18,8 @@ interface Runner {
 
 export async function GET() {
   try {
-    const { stdout, stderr } = await execAsync("gitlab-runner list");
+    const runnerCmd = getRunnerCommand();
+    const { stdout, stderr } = await execAsync(`${runnerCmd} list`);
     // GitLab runner sometimes outputs to stderr instead of stdout
     const output = stdout || stderr;
     const runners: Runner[] = parseRunners(output);
@@ -34,7 +41,8 @@ export async function POST({ request }) {
           .join(",")
       : "";
 
-    let command = `gitlab-runner register --non-interactive --url "${url}" --registration-token "${token}" --description "${description}" --executor shell`;
+    const runnerCmd = getRunnerCommand();
+    let command = `${runnerCmd} register --non-interactive --url "${url}" --registration-token "${token}" --description "${description}" --executor shell`;
     if (tagList) command += ` --tag-list "${tagList}"`;
 
     await execAsync(command);
@@ -49,7 +57,8 @@ export async function DELETE({ request }) {
   try {
     const { name } = await request.json();
 
-    let command = `gitlab-runner unregister --name "${name}"`;
+    const runnerCmd = getRunnerCommand();
+    let command = `${runnerCmd} unregister --name "${name}"`;
 
     await execAsync(command);
     return json({ success: true });

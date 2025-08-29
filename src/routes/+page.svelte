@@ -110,7 +110,7 @@
     <!-- Main Content Grid -->
     <div
       class="m3-content-grid"
-      style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;"
+      style="display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start;"
     >
       <!-- Registration Section -->
       <section class="m3-registration-section">
@@ -141,6 +141,7 @@
                 bind:value={formData.url}
                 type="url"
                 required
+                style="width: 100%;"
               />
               <p
                 class="m3-supporting-text"
@@ -156,6 +157,7 @@
                 bind:value={formData.token}
                 type="password"
                 required
+                style="width: 100%;"
               />
               <p
                 class="m3-supporting-text"
@@ -166,7 +168,12 @@
             </div>
 
             <div class="m3-form-field">
-              <TextField label="Runner Description" bind:value={formData.description} required />
+              <TextField
+                label="Runner Description"
+                bind:value={formData.description}
+                required
+                style="width: 100%;"
+              />
               <p
                 class="m3-supporting-text"
                 style="color: rgb(var(--m3-scheme-on-surface-variant)); font-size: 0.875rem; margin: 4px 0 0 0;"
@@ -176,7 +183,7 @@
             </div>
 
             <div class="m3-form-field">
-              <TextField label="Tags" bind:value={formData.tags} required />
+              <TextField label="Tags" bind:value={formData.tags} required style="width: 100%;" />
               <p
                 class="m3-supporting-text"
                 style="color: rgb(var(--m3-scheme-on-surface-variant)); font-size: 0.875rem; margin: 4px 0 0 0;"
@@ -401,15 +408,42 @@
     }
   }
 
-  @media (min-width: 840px) {
+  @media (min-width: 600px) {
     .m3-content-grid {
-      grid-template-columns: 400px 1fr;
-      gap: 32px;
+      grid-template-columns: 400px 1fr !important;
+      gap: 32px !important;
     }
   }
 
   .m3-form-field {
     position: relative;
+    width: 100%;
+  }
+
+  .m3-form-field :global(*) {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .m3-form {
+    width: 100%;
+  }
+
+  .m3-form :global(input) {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .m3-form :global(.m3-text-field) {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .m3-form :global(label) {
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .m3-runner-item:hover {
