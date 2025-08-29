@@ -35,6 +35,8 @@
     ]
   },
   "dependencies": {
-    "@types/node": "^24.3.0"
+    "@ktibow/iconset-material-symbols": "^0.0.1755063979",
+    "@types/node": "^24.3.0",
+    "m3-svelte": "^5.4.0"
   }
 }
