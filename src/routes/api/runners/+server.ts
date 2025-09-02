@@ -1,13 +1,12 @@
 import { json } from "@sveltejs/kit";
 import { exec } from "child_process";
 import { promisify } from "util";
-import { dev } from "$app/environment";
 
 const execAsync = promisify(exec);
 
 // Get the gitlab-runner command based on environment
 const getRunnerCommand = () => {
-  return dev ? "docker exec gitlab-runner gitlab-runner" : "gitlab-runner";
+  return "gitlab-runner";
 };
 
 interface Runner {
@@ -58,7 +57,7 @@ export async function DELETE({ request }) {
     const { name } = await request.json();
 
     const runnerCmd = getRunnerCommand();
-    let command = `${runnerCmd} unregister --name "${name}"`;
+    const command = `${runnerCmd} unregister --name "${name}"`;
 
     await execAsync(command);
     return json({ success: true });
