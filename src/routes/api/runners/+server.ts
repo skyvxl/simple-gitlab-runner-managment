@@ -13,6 +13,7 @@ interface Runner {
   name: string;
   url: string;
   status: string;
+  token: string;
 }
 
 export async function GET() {
@@ -54,10 +55,10 @@ export async function POST({ request }) {
 
 export async function DELETE({ request }) {
   try {
-    const { name } = await request.json();
+    const { token } = await request.json();
 
     const runnerCmd = getRunnerCommand();
-    const command = `${runnerCmd} unregister --name "${name}"`;
+    const command = `${runnerCmd} unregister --token "${token}"`;
 
     await execAsync(command);
     return json({ success: true });
@@ -84,15 +85,17 @@ function parseRunners(output: string): Runner[] {
 
   for (const line of lines) {
     // Format: s21_containers                                      Executor=shell Token=ASn7aZYvdLuHyyxAsbUY URL=https://git.21-school.ru
-    const nameMatch = line.match(/^(\S+)/);
+    const nameMatch = line.match(/^(.+?)\s+Executor=/);
     const urlMatch = line.match(/URL=([^\s]+)/);
     const executorMatch = line.match(/Executor=([^\s]+)/);
+    const tokenMatch = line.match(/Token=([^\s]+)/);
 
-    if (nameMatch && urlMatch) {
+    if (nameMatch && urlMatch && tokenMatch) {
       const runner = {
-        name: nameMatch[1],
+        name: nameMatch[1].trim(),
         url: urlMatch[1],
         status: executorMatch ? executorMatch[1] : "unknown",
+        token: tokenMatch[1],
       };
       runners.push(runner);
     }

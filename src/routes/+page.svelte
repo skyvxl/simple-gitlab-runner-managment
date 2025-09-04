@@ -62,15 +62,15 @@
   async function deleteRunner() {
     if (!runnerToDelete) return;
 
-    const name = runnerToDelete.name;
-    deleting[name] = true;
+    const token = runnerToDelete.token;
+    deleting[runnerToDelete.name] = true;
     showDeleteDialog = false;
 
     try {
       const response = await fetch(`${resolve("/api/runners")}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ token }),
       });
       if (response.ok) {
         await loadRunners();
@@ -82,7 +82,7 @@
       console.error("Error deleting runner:", error);
       showMessage("Error deleting runner");
     }
-    deleting[name] = false;
+    deleting[runnerToDelete.name] = false;
     runnerToDelete = null;
   }
 
