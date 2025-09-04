@@ -35,7 +35,7 @@
   async function registerRunner() {
     loading = true;
     try {
-      const response = await fetch("/api/runners", {
+      const response = await fetch(`${resolve("/api/runners")}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -67,7 +67,7 @@
     showDeleteDialog = false;
 
     try {
-      const response = await fetch("/api/runners", {
+      const response = await fetch(`${resolve("/api/runners")}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
