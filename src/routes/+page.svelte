@@ -1,19 +1,19 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { resolve } from "$app/paths";
-  import { Button, TextField, Dialog, Snackbar } from "m3-svelte";
+  import { onMount } from 'svelte';
+  import { resolve } from '$app/paths';
+  import { Button, TextField, Dialog, Snackbar } from 'm3-svelte';
 
-  let runners: any[] = [];
-  let formData = {
-    url: "",
-    token: "",
-    description: "",
-    tags: "",
-  };
-  let loading = false;
-  let deleting: { [key: string]: boolean } = {};
-  let showDeleteDialog = false;
-  let runnerToDelete: any = null;
+  let runners = $state<any[]>([]);
+  let formData = $state({
+    url: '',
+    token: '',
+    description: '',
+    tags: '',
+  });
+  let loading = $state(false);
+  let deleting = $state<Record<number, boolean>>({});
+  let showDeleteDialog = $state(false);
+  let runnerToDelete = $state<any>(null);
   let snackbar: ReturnType<typeof Snackbar>;
 
   onMount(async () => {
@@ -22,34 +22,41 @@
 
   async function loadRunners() {
     try {
-      const response = await fetch(`${resolve("/api/runners")}`);
+      const response = await fetch(resolve('/api/runners'));
       if (response.ok) {
         runners = await response.json();
+      } else {
+        showMessage('Failed to load runners');
       }
     } catch (error) {
-      console.error("Error loading runners:", error);
-      showMessage("Failed to load runners");
+      console.error('Error loading runners:', error);
+      showMessage('Failed to load runners');
     }
   }
 
   async function registerRunner() {
     loading = true;
     try {
-      const response = await fetch(`${resolve("/api/runners")}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch(resolve('/api/runners'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
       if (response.ok) {
         await loadRunners();
-        formData = { url: "", token: "", description: "", tags: "" };
-        showMessage("Runner registered successfully");
+        // Reset form
+        formData.url = '';
+        formData.token = '';
+        formData.description = '';
+        formData.tags = '';
+        showMessage('Runner registered successfully');
       } else {
-        showMessage("Failed to register runner");
+        const data = await response.json();
+        showMessage(data.error || 'Failed to register runner');
       }
     } catch (error) {
-      console.error("Error registering runner:", error);
-      showMessage("Error registering runner");
+      console.error('Error registering runner:', error);
+      showMessage('Error registering runner');
     }
     loading = false;
   }
@@ -62,27 +69,28 @@
   async function deleteRunner() {
     if (!runnerToDelete) return;
 
-    const token = runnerToDelete.token;
-    deleting[runnerToDelete.name] = true;
+    const id = runnerToDelete.id;
+    deleting[id] = true;
     showDeleteDialog = false;
 
     try {
-      const response = await fetch(`${resolve("/api/runners")}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+      const response = await fetch(resolve('/api/runners'), {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
       });
       if (response.ok) {
-        await loadRunners();
-        showMessage("Runner deleted successfully");
+        runners = runners.filter(r => r.id !== id);
+        showMessage('Runner deleted successfully');
       } else {
-        showMessage("Failed to delete runner");
+        const data = await response.json();
+        showMessage(data.error || 'Failed to delete runner');
       }
     } catch (error) {
-      console.error("Error deleting runner:", error);
-      showMessage("Error deleting runner");
+      console.error('Error deleting runner:', error);
+      showMessage('Error deleting runner');
     }
-    deleting[runnerToDelete.name] = false;
+    deleting[id] = false;
     runnerToDelete = null;
   }
 
@@ -131,7 +139,7 @@
           </h2>
 
           <form
-            on:submit|preventDefault={registerRunner}
+            onsubmit={(e) => { e.preventDefault(); registerRunner(); }}
             class="m3-form"
             style="display: flex; flex-direction: column; gap: 20px;"
           >
@@ -163,7 +171,7 @@
                 class="m3-supporting-text"
                 style="color: rgb(var(--m3-scheme-on-surface-variant)); font-size: 0.875rem; margin: 4px 0 0 0;"
               >
-                Example: GR1234567890abcdef
+                From your GitLab project's CI/CD settings page.
               </p>
             </div>
 
@@ -227,7 +235,7 @@
               class="m3-headline-small"
               style="color: rgb(var(--m3-scheme-on-surface)); font-weight: 500; margin: 0;"
             >
-              Registered Runners
+              My Runners
             </h2>
             {#if runners.length > 0}
               <span
@@ -335,8 +343,12 @@
                     <div
                       class="m3-runner-status"
                       style="
-                      background: rgb(var(--m3-scheme-secondary-container));
-                      color: rgb(var(--m3-scheme-on-secondary-container));
+                      background: {runner.status === 'online'
+                        ? 'rgb(var(--m3-scheme-primary-container))'
+                        : 'rgb(var(--m3-scheme-secondary-container))'};
+                      color: {runner.status === 'online'
+                        ? 'rgb(var(--m3-scheme-on-primary-container))'
+                        : 'rgb(var(--m3-scheme-on-secondary-container))'};
                       padding: 6px 16px;
                       border-radius: 16px;
                       font-size: 0.875rem;
@@ -347,7 +359,9 @@
                     "
                     >
                       <span
-                        style="width: 8px; height: 8px; background: rgb(var(--m3-scheme-on-secondary-container)); border-radius: 50%;"
+                        style="width: 8px; height: 8px; background: {runner.status === 'online'
+                          ? 'rgb(var(--m3-scheme-primary))'
+                          : 'rgb(var(--m3-scheme-on-secondary-container))'}; border-radius: 50%;"
                       ></span>
                       {runner.status}
                     </div>
@@ -355,10 +369,10 @@
                     <Button
                       variant="text"
                       onclick={() => confirmDelete(runner)}
-                      disabled={deleting[runner.name]}
+                      disabled={deleting[runner.id]}
                       style="color: rgb(var(--m3-scheme-error));"
                     >
-                      {#if deleting[runner.name]}
+                      {#if deleting[runner.id]}
                         Deleting...
                       {:else}
                         Delete
@@ -374,7 +388,7 @@
     </div>
 
     <!-- Delete Confirmation Dialog -->
-    <Dialog bind:open={showDeleteDialog} headline="Delete Runner">
+    <Dialog open={showDeleteDialog} headline="Delete Runner" onclose={() => (showDeleteDialog = false)}>
       <div class="m3-body-medium" style="margin-bottom: 24px;">
         Are you sure you want to delete runner <strong>"{runnerToDelete?.name}"</strong>? This
         action cannot be undone and will remove the runner from GitLab.

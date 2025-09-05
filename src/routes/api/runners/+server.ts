@@ -1,105 +1,165 @@
-import { json } from "@sveltejs/kit";
-import { exec } from "child_process";
-import { promisify } from "util";
+import { json } from '@sveltejs/kit';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { db } from '$lib/server/db';
+import { runners } from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
+import { shellescape } from '$lib/server/utils';
 
 const execAsync = promisify(exec);
 
-// Get the gitlab-runner command based on environment
 const getRunnerCommand = () => {
-  return "gitlab-runner";
+  return 'gitlab-runner';
 };
 
-interface Runner {
+interface RunnerStatus {
   name: string;
-  url: string;
-  status: string;
   token: string;
+  status: string;
 }
 
-export async function GET() {
-  try {
-    const runnerCmd = getRunnerCommand();
-    const { stdout, stderr } = await execAsync(`${runnerCmd} list`);
-    // GitLab runner sometimes outputs to stderr instead of stdout
-    const output = stdout || stderr;
-    const runners: Runner[] = parseRunners(output);
-    return json(runners);
-  } catch (error) {
-    console.error("Error listing runners:", error);
-    return json({ error: "Failed to list runners" }, { status: 500 });
-  }
-}
-
-export async function POST({ request }) {
-  try {
-    const { url, token, description, tags } = await request.json();
-
-    const tagList = tags
-      ? tags
-          .split(",")
-          .map((t: string) => t.trim())
-          .join(",")
-      : "";
-
-    const runnerCmd = getRunnerCommand();
-    let command = `${runnerCmd} register --non-interactive --url "${url}" --registration-token "${token}" --description "${description}" --executor shell`;
-    if (tagList) command += ` --tag-list "${tagList}"`;
-
-    await execAsync(command);
-    return json({ success: true });
-  } catch (error) {
-    console.error("Error registering runner:", error);
-    return json({ error: "Failed to register runner" }, { status: 500 });
-  }
-}
-
-export async function DELETE({ request }) {
-  try {
-    const { token } = await request.json();
-
-    const runnerCmd = getRunnerCommand();
-    const command = `${runnerCmd} unregister --token "${token}"`;
-
-    await execAsync(command);
-    return json({ success: true });
-  } catch (error) {
-    console.error("Error unregistering runner:", error);
-    return json({ error: "Failed to unregister runner" }, { status: 500 });
-  }
-}
-
-function parseRunners(output: string): Runner[] {
-  // Remove ANSI escape codes
-  const cleanOutput = output.replace(/\x1b\[[0-9;]*m/g, "");
-
+function parseRunnerStatus(output: string): RunnerStatus[] {
+  const cleanOutput = output.replace(/\x1b\[[0-9;]*m/g, '');
   const lines = cleanOutput
-    .split("\n")
+    .split('\n')
     .filter(
       (line) =>
         line.trim() &&
-        !line.startsWith("Listing") &&
-        !line.startsWith("Runtime") &&
-        !line.startsWith("ConfigFile"),
+        !line.startsWith('Listing') &&
+        !line.startsWith('Runtime') &&
+        !line.startsWith('ConfigFile')
     );
-  const runners: Runner[] = [];
+  const statuses: RunnerStatus[] = [];
 
   for (const line of lines) {
-    // Format: s21_containers                                      Executor=shell Token=ASn7aZYvdLuHyyxAsbUY URL=https://git.21-school.ru
     const nameMatch = line.match(/^(.+?)\s+Executor=/);
-    const urlMatch = line.match(/URL=([^\s]+)/);
-    const executorMatch = line.match(/Executor=([^\s]+)/);
     const tokenMatch = line.match(/Token=([^\s]+)/);
+    const executorMatch = line.match(/Executor=([^\s]+)/); // Status is in executor field
 
-    if (nameMatch && urlMatch && tokenMatch) {
-      const runner = {
+    if (nameMatch && tokenMatch && executorMatch) {
+      statuses.push({
         name: nameMatch[1].trim(),
-        url: urlMatch[1],
-        status: executorMatch ? executorMatch[1] : "unknown",
         token: tokenMatch[1],
-      };
-      runners.push(runner);
+        status: executorMatch[1],
+      });
     }
   }
+  return statuses;
+}
 
-  return runners;
+export async function GET({ locals }) {
+  if (!locals.user) {
+    return json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const userRunners = await db.query.runners.findMany({
+      where: eq(runners.userId, locals.user.id),
+    });
+
+    const runnerCmd = getRunnerCommand();
+    const { stdout, stderr } = await execAsync(`${runnerCmd} list`);
+    const output = stdout || stderr;
+    const liveStatuses = parseRunnerStatus(output);
+
+    const runnersWithStatus = userRunners.map((dbRunner) => {
+      const liveRunner = liveStatuses.find((r) => r.token === dbRunner.token);
+      return {
+        ...dbRunner,
+        status: liveRunner ? liveRunner.status : 'offline',
+      };
+    });
+
+    return json(runnersWithStatus);
+  } catch (error) {
+    console.error('Error listing runners:', error);
+    return json({ error: 'Failed to list runners' }, { status: 500 });
+  }
+}
+
+export async function POST({ request, locals }) {
+  if (!locals.user) {
+    return json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const { url, token: registrationToken, description, tags } = await request.json();
+    const uniqueDescription = `${description} [user:${locals.user.id}] [timestamp:${Date.now()}]`;
+
+    const tagList = tags ? tags.split(',').map((t: string) => t.trim()).join(',') : '';
+
+    const runnerCmd = getRunnerCommand();
+
+    const safeUrl = shellescape(url);
+    const safeRegToken = shellescape(registrationToken);
+    const safeDesc = shellescape(uniqueDescription);
+
+    let registerCommand = `${runnerCmd} register --non-interactive --url ${safeUrl} --token ${safeRegToken} --description ${safeDesc} --executor shell`;
+    if (tagList) {
+        const safeTagList = shellescape(tagList);
+        registerCommand += ` --tag-list ${safeTagList}`;
+    }
+
+    await execAsync(registerCommand);
+
+    // Find the token of the newly registered runner
+    const { stdout, stderr } = await execAsync(`${runnerCmd} list`);
+    const output = stdout || stderr;
+    const allLiveRunners = parseRunnerStatus(output);
+    const newRunner = allLiveRunners.find((r) => r.name === uniqueDescription);
+
+    if (!newRunner) {
+      // Cleanup failed registration
+      await execAsync(`${runnerCmd} unregister --description ${safeDesc}`);
+      return json({ error: 'Failed to find the newly registered runner to save it.' }, { status: 500 });
+    }
+
+    await db.insert(runners).values({
+      userId: locals.user.id,
+      token: newRunner.token,
+      name: description, // Store the original description
+      url,
+    });
+
+    return json({ success: true }, { status: 201 });
+  } catch (error) {
+    console.error('Error registering runner:', error);
+    return json({ error: 'Failed to register runner' }, { status: 500 });
+  }
+}
+
+export async function DELETE({ request, locals }) {
+  const user = locals.user;
+  if (!user) {
+    return json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const { id } = await request.json(); // We'll use the database ID for deletion
+
+    const runnerToDelete = await db.query.runners.findFirst({
+      where: eq(runners.id, id),
+    });
+
+    if (!runnerToDelete) {
+      return json({ error: 'Runner not found' }, { status: 404 });
+    }
+
+    // Admin can delete any runner, users can only delete their own
+    if (user.role !== 'admin' && runnerToDelete.userId !== user.id) {
+        return json({ error: 'You do not have permission to delete this runner' }, { status: 403 });
+    }
+
+    const runnerCmd = getRunnerCommand();
+    const safeToken = shellescape(runnerToDelete.token);
+    const command = `${runnerCmd} unregister --token ${safeToken}`;
+    await execAsync(command);
+
+    await db.delete(runners).where(eq(runners.id, id));
+
+    return json({ success: true });
+  } catch (error) {
+    console.error('Error unregistering runner:', error);
+    return json({ error: 'Failed to unregister runner' }, { status: 500 });
+  }
 }
