@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { Button, TextField, Snackbar } from 'm3-svelte';
 
   let username = '';
@@ -12,7 +13,7 @@
     loading = true;
     error = null;
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch(resolve('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),

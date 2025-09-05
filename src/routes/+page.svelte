@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { resolve } from '$app/paths';
   import { Button, TextField, Dialog, Snackbar } from 'm3-svelte';
 
   let runners: any[] = [];
@@ -21,7 +22,7 @@
 
   async function loadRunners() {
     try {
-      const response = await fetch('/api/runners');
+      const response = await fetch(resolve('/api/runners'));
       if (response.ok) {
         runners = await response.json();
       } else {
@@ -36,7 +37,7 @@
   async function registerRunner() {
     loading = true;
     try {
-      const response = await fetch('/api/runners', {
+      const response = await fetch(resolve('/api/runners'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -69,7 +70,7 @@
     showDeleteDialog = false;
 
     try {
-      const response = await fetch('/api/runners', {
+      const response = await fetch(resolve('/api/runners'), {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button, Dialog, Snackbar } from 'm3-svelte';
+  import { resolve } from '$app/paths';
   import type { PageData } from './$types';
 
   let { data } = $props<{ data: PageData }>();
@@ -23,7 +24,7 @@
     showDeleteDialog = false;
 
     try {
-      const response = await fetch('/api/runners', {
+      const response = await fetch(resolve('/api/runners'), {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { Button } from 'm3-svelte';
   import '../app.css';
   import favicon from '$lib/assets/favicon.svg';
@@ -8,7 +9,7 @@
   let { data, children } = $props<{ data: LayoutData; children: any }>();
 
   async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await fetch(resolve('/api/auth/logout'), { method: 'POST' });
     await goto('/login');
   }
 </script>
