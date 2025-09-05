@@ -130,7 +130,7 @@
   </div>
 </div>
 
-<Dialog bind:open={showDeleteDialog} headline="Delete Runner">
+<Dialog open={showDeleteDialog} headline="Delete Runner" onclose={() => (showDeleteDialog = false)}>
   <div class="m3-body-medium" style="margin-bottom: 24px;">
     Are you sure you want to delete runner <strong>"{runnerToDelete?.name}"</strong> owned by <strong>{runnerToDelete?.owner}</strong>?
   </div>

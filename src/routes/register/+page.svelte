@@ -3,10 +3,10 @@
   import { resolve } from '$app/paths';
   import { Button, TextField, Snackbar } from 'm3-svelte';
 
-  let username = '';
-  let password = '';
-  let loading = false;
-  let error: string | null = null;
+  let username = $state('');
+  let password = $state('');
+  let loading = $state(false);
+  let error = $state<string | null>(null);
   let snackbar: ReturnType<typeof Snackbar>;
 
   async function register() {
@@ -40,7 +40,7 @@
     <h1 class="m3-headline-medium" style="text-align: center; margin-bottom: 24px; color: rgb(var(--m3-scheme-on-surface));">
       Register
     </h1>
-    <form on:submit|preventDefault={register} style="display: flex; flex-direction: column; gap: 20px;">
+    <form onsubmit={register} style="display: flex; flex-direction: column; gap: 20px;">
       <TextField label="Username" bind:value={username} required style="width: 100%;" />
       <TextField label="Password" type="password" bind:value={password} required style="width: 100%;" />
 

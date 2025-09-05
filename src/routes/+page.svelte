@@ -3,17 +3,17 @@
   import { resolve } from '$app/paths';
   import { Button, TextField, Dialog, Snackbar } from 'm3-svelte';
 
-  let runners: any[] = [];
-  let formData = {
+  let runners = $state<any[]>([]);
+  let formData = $state({
     url: '',
     token: '',
     description: '',
     tags: '',
-  };
-  let loading = false;
-  let deleting: { [key: number]: boolean } = {};
-  let showDeleteDialog = false;
-  let runnerToDelete: any = null;
+  });
+  let loading = $state(false);
+  let deleting = $state<Record<number, boolean>>({});
+  let showDeleteDialog = $state(false);
+  let runnerToDelete = $state<any>(null);
   let snackbar: ReturnType<typeof Snackbar>;
 
   onMount(async () => {
@@ -44,7 +44,11 @@
       });
       if (response.ok) {
         await loadRunners();
-        formData = { url: '', token: '', description: '', tags: '' };
+        // Reset form
+        formData.url = '';
+        formData.token = '';
+        formData.description = '';
+        formData.tags = '';
         showMessage('Runner registered successfully');
       } else {
         const data = await response.json();
@@ -76,7 +80,7 @@
         body: JSON.stringify({ id }),
       });
       if (response.ok) {
-        await loadRunners();
+        runners = runners.filter(r => r.id !== id);
         showMessage('Runner deleted successfully');
       } else {
         const data = await response.json();
@@ -135,7 +139,7 @@
           </h2>
 
           <form
-            on:submit|preventDefault={registerRunner}
+            onsubmit={registerRunner}
             class="m3-form"
             style="display: flex; flex-direction: column; gap: 20px;"
           >
@@ -384,7 +388,7 @@
     </div>
 
     <!-- Delete Confirmation Dialog -->
-    <Dialog bind:open={showDeleteDialog} headline="Delete Runner">
+    <Dialog open={showDeleteDialog} headline="Delete Runner">
       <div class="m3-body-medium" style="margin-bottom: 24px;">
         Are you sure you want to delete runner <strong>"{runnerToDelete?.name}"</strong>? This
         action cannot be undone and will remove the runner from GitLab.
