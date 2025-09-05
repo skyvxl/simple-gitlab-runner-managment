@@ -1,61 +1,57 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { resolve } from "$app/paths";
-  import { Button, TextField, Dialog, Snackbar } from "m3-svelte";
+  import { onMount } from 'svelte';
+  import { Button, TextField, Dialog, Snackbar } from 'm3-svelte';
 
   let runners: any[] = [];
-  let userId: string | null = null;
   let formData = {
-    url: "",
-    token: "",
-    description: "",
-    tags: "",
+    url: '',
+    token: '',
+    description: '',
+    tags: '',
   };
   let loading = false;
-  let deleting: { [key: string]: boolean } = {};
+  let deleting: { [key: number]: boolean } = {};
   let showDeleteDialog = false;
   let runnerToDelete: any = null;
   let snackbar: ReturnType<typeof Snackbar>;
 
   onMount(async () => {
-    userId = localStorage.getItem("userId");
-    if (!userId) {
-      userId = crypto.randomUUID();
-      localStorage.setItem("userId", userId);
-    }
     await loadRunners();
   });
 
   async function loadRunners() {
     try {
-      const response = await fetch(`${resolve("/api/runners")}`);
+      const response = await fetch('/api/runners');
       if (response.ok) {
         runners = await response.json();
+      } else {
+        showMessage('Failed to load runners');
       }
     } catch (error) {
-      console.error("Error loading runners:", error);
-      showMessage("Failed to load runners");
+      console.error('Error loading runners:', error);
+      showMessage('Failed to load runners');
     }
   }
 
   async function registerRunner() {
     loading = true;
     try {
-      const response = await fetch(`${resolve("/api/runners")}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, userId }),
+      const response = await fetch('/api/runners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
       if (response.ok) {
         await loadRunners();
-        formData = { url: "", token: "", description: "", tags: "" };
-        showMessage("Runner registered successfully");
+        formData = { url: '', token: '', description: '', tags: '' };
+        showMessage('Runner registered successfully');
       } else {
-        showMessage("Failed to register runner");
+        const data = await response.json();
+        showMessage(data.error || 'Failed to register runner');
       }
     } catch (error) {
-      console.error("Error registering runner:", error);
-      showMessage("Error registering runner");
+      console.error('Error registering runner:', error);
+      showMessage('Error registering runner');
     }
     loading = false;
   }
@@ -68,27 +64,28 @@
   async function deleteRunner() {
     if (!runnerToDelete) return;
 
-    const token = runnerToDelete.token;
-    deleting[runnerToDelete.name] = true;
+    const id = runnerToDelete.id;
+    deleting[id] = true;
     showDeleteDialog = false;
 
     try {
-      const response = await fetch(`${resolve("/api/runners")}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, userId }),
+      const response = await fetch('/api/runners', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
       });
       if (response.ok) {
         await loadRunners();
-        showMessage("Runner deleted successfully");
+        showMessage('Runner deleted successfully');
       } else {
-        showMessage("Failed to delete runner");
+        const data = await response.json();
+        showMessage(data.error || 'Failed to delete runner');
       }
     } catch (error) {
-      console.error("Error deleting runner:", error);
-      showMessage("Error deleting runner");
+      console.error('Error deleting runner:', error);
+      showMessage('Error deleting runner');
     }
-    deleting[runnerToDelete.name] = false;
+    deleting[id] = false;
     runnerToDelete = null;
   }
 
@@ -169,7 +166,7 @@
                 class="m3-supporting-text"
                 style="color: rgb(var(--m3-scheme-on-surface-variant)); font-size: 0.875rem; margin: 4px 0 0 0;"
               >
-                Example: GR1234567890abcdef
+                From your GitLab project's CI/CD settings page.
               </p>
             </div>
 
@@ -233,7 +230,7 @@
               class="m3-headline-small"
               style="color: rgb(var(--m3-scheme-on-surface)); font-weight: 500; margin: 0;"
             >
-              Registered Runners
+              My Runners
             </h2>
             {#if runners.length > 0}
               <span
@@ -293,9 +290,7 @@
                   background: rgb(var(--m3-scheme-surface-container-high));
                   border-radius: 12px;
                   padding: 20px;
-                  border: 1px solid {runner.userId === userId
-                    ? 'rgb(var(--m3-scheme-primary))'
-                    : 'rgb(var(--m3-scheme-outline-variant))'};
+                  border: 1px solid rgb(var(--m3-scheme-outline-variant));
                   transition: all 0.2s ease;
                 "
                 >
@@ -343,8 +338,12 @@
                     <div
                       class="m3-runner-status"
                       style="
-                      background: rgb(var(--m3-scheme-secondary-container));
-                      color: rgb(var(--m3-scheme-on-secondary-container));
+                      background: {runner.status === 'online'
+                        ? 'rgb(var(--m3-scheme-primary-container))'
+                        : 'rgb(var(--m3-scheme-secondary-container))'};
+                      color: {runner.status === 'online'
+                        ? 'rgb(var(--m3-scheme-on-primary-container))'
+                        : 'rgb(var(--m3-scheme-on-secondary-container))'};
                       padding: 6px 16px;
                       border-radius: 16px;
                       font-size: 0.875rem;
@@ -355,25 +354,25 @@
                     "
                     >
                       <span
-                        style="width: 8px; height: 8px; background: rgb(var(--m3-scheme-on-secondary-container)); border-radius: 50%;"
+                        style="width: 8px; height: 8px; background: {runner.status === 'online'
+                          ? 'rgb(var(--m3-scheme-primary))'
+                          : 'rgb(var(--m3-scheme-on-secondary-container))'}; border-radius: 50%;"
                       ></span>
                       {runner.status}
                     </div>
 
-                    {#if runner.userId === userId}
-                      <Button
-                        variant="text"
-                        onclick={() => confirmDelete(runner)}
-                        disabled={deleting[runner.name]}
-                        style="color: rgb(var(--m3-scheme-error));"
-                      >
-                        {#if deleting[runner.name]}
-                          Deleting...
-                        {:else}
-                          Delete
-                        {/if}
-                      </Button>
-                    {/if}
+                    <Button
+                      variant="text"
+                      onclick={() => confirmDelete(runner)}
+                      disabled={deleting[runner.id]}
+                      style="color: rgb(var(--m3-scheme-error));"
+                    >
+                      {#if deleting[runner.id]}
+                        Deleting...
+                      {:else}
+                        Delete
+                      {/if}
+                    </Button>
                   </div>
                 </div>
               {/each}
