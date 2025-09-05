@@ -49,7 +49,7 @@
           <Button variant="text">Admin Panel</Button>
         </a>
       {/if}
-      <Button variant="outlined" on:click={logout} style="margin-left: 12px;">Logout</Button>
+      <Button variant="outlined" onclick={logout} style="margin-left: 12px;">Logout</Button>
     </div>
   </header>
 {/if}

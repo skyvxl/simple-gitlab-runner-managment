@@ -40,7 +40,7 @@
     <h1 class="m3-headline-medium" style="text-align: center; margin-bottom: 24px; color: rgb(var(--m3-scheme-on-surface));">
       Register
     </h1>
-    <form onsubmit={register} style="display: flex; flex-direction: column; gap: 20px;">
+    <form onsubmit={(e) => { e.preventDefault(); register(); }} style="display: flex; flex-direction: column; gap: 20px;">
       <TextField label="Username" bind:value={username} required style="width: 100%;" />
       <TextField label="Password" type="password" bind:value={password} required style="width: 100%;" />
 

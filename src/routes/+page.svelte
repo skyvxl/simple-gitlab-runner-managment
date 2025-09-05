@@ -139,7 +139,7 @@
           </h2>
 
           <form
-            onsubmit={registerRunner}
+            onsubmit={(e) => { e.preventDefault(); registerRunner(); }}
             class="m3-form"
             style="display: flex; flex-direction: column; gap: 20px;"
           >
