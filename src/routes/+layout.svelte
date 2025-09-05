@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { resolve } from '$app/paths';
-  import { Button } from 'm3-svelte';
-  import '../app.css';
-  import favicon from '$lib/assets/favicon.svg';
-  import type { LayoutData } from './$types';
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import { Button } from "m3-svelte";
+  import "../app.css";
+  import favicon from "$lib/assets/favicon.svg";
+  import type { LayoutData } from "./$types";
 
   let { data, children } = $props<{ data: LayoutData; children: any }>();
 
   async function logout() {
-    await fetch(resolve('/api/auth/logout'), { method: 'POST' });
-    await goto('/login');
+    await fetch(resolve("/api/auth/logout"), { method: "POST" });
+    await goto("/login");
   }
 </script>
 
@@ -27,7 +27,7 @@
   >
     <div class="m3-title-medium">
       Welcome, <span style="font-weight: 500;">{data.user.username}</span>
-      {#if data.user.role === 'admin'}
+      {#if data.user.role === "admin"}
         <span
           style="
             background: rgb(var(--m3-scheme-tertiary-container));
@@ -44,8 +44,8 @@
       {/if}
     </div>
     <div>
-      {#if data.user.role === 'admin'}
-        <a href="/admin/runners">
+      {#if data.user.role === "admin"}
+        <a href={resolve("/admin/runners")}>
           <Button variant="text">Admin Panel</Button>
         </a>
       {/if}
