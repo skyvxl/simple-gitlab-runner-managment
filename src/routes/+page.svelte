@@ -4,6 +4,7 @@
   import { Button, TextField, Dialog, Snackbar } from "m3-svelte";
 
   let runners: any[] = [];
+  let userId: string | null = null;
   let formData = {
     url: "",
     token: "",
@@ -17,6 +18,11 @@
   let snackbar: ReturnType<typeof Snackbar>;
 
   onMount(async () => {
+    userId = localStorage.getItem("userId");
+    if (!userId) {
+      userId = crypto.randomUUID();
+      localStorage.setItem("userId", userId);
+    }
     await loadRunners();
   });
 
@@ -38,7 +44,7 @@
       const response = await fetch(`${resolve("/api/runners")}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, userId }),
       });
       if (response.ok) {
         await loadRunners();
@@ -70,7 +76,7 @@
       const response = await fetch(`${resolve("/api/runners")}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, userId }),
       });
       if (response.ok) {
         await loadRunners();
@@ -287,7 +293,9 @@
                   background: rgb(var(--m3-scheme-surface-container-high));
                   border-radius: 12px;
                   padding: 20px;
-                  border: 1px solid rgb(var(--m3-scheme-outline-variant));
+                  border: 1px solid {runner.userId === userId
+                    ? 'rgb(var(--m3-scheme-primary))'
+                    : 'rgb(var(--m3-scheme-outline-variant))'};
                   transition: all 0.2s ease;
                 "
                 >
@@ -352,18 +360,20 @@
                       {runner.status}
                     </div>
 
-                    <Button
-                      variant="text"
-                      onclick={() => confirmDelete(runner)}
-                      disabled={deleting[runner.name]}
-                      style="color: rgb(var(--m3-scheme-error));"
-                    >
-                      {#if deleting[runner.name]}
-                        Deleting...
-                      {:else}
-                        Delete
-                      {/if}
-                    </Button>
+                    {#if runner.userId === userId}
+                      <Button
+                        variant="text"
+                        onclick={() => confirmDelete(runner)}
+                        disabled={deleting[runner.name]}
+                        style="color: rgb(var(--m3-scheme-error));"
+                      >
+                        {#if deleting[runner.name]}
+                          Deleting...
+                        {:else}
+                          Delete
+                        {/if}
+                      </Button>
+                    {/if}
                   </div>
                 </div>
               {/each}
