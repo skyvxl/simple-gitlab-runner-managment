@@ -20,7 +20,7 @@
       });
 
       if (response.ok) {
-        await goto("/");
+        await goto("/runners/");
       } else {
         const data = await response.json();
         error = data.error || "Login failed";
@@ -75,7 +75,7 @@
           Don't have an account?
         </span>
         <a
-          href={resolve("/register")}
+          href="/runners/register"
           class="m3-label-large"
           style="text-decoration: none; color: rgb(var(--m3-scheme-primary)); margin-left: 4px;"
         >

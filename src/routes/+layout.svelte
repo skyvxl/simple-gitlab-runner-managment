@@ -10,7 +10,7 @@
 
   async function logout() {
     await fetch(resolve("/api/auth/logout"), { method: "POST" });
-    await goto("/login");
+    await goto("/runners/login");
   }
 </script>
 
@@ -45,7 +45,7 @@
     </div>
     <div>
       {#if data.user.role === "admin"}
-        <a href={resolve("/admin/runners")}>
+        <a href="/runners/admin/runners">
           <Button variant="text">Admin Panel</Button>
         </a>
       {/if}

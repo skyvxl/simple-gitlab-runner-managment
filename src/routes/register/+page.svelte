@@ -21,7 +21,7 @@
 
       if (response.ok) {
         snackbar?.show({ message: "Registration successful! Please log in." });
-        await goto("/login");
+        await goto("/runners/login");
       } else {
         const data = await response.json();
         error = data.error || "Registration failed";
@@ -85,7 +85,7 @@
           Already have an account?
         </span>
         <a
-          href={resolve("/login")}
+          href="/runners/login"
           class="m3-label-large"
           style="text-decoration: none; color: rgb(var(--m3-scheme-primary)); margin-left: 4px;"
         >

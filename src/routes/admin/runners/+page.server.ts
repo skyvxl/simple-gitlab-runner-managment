@@ -37,7 +37,7 @@ function parseRunnerStatus(output: string): RunnerStatus[] {
 
 export const load: PageServerLoad = async ({ locals }) => {
   if (!locals.user) {
-    throw redirect(303, '/login');
+    throw redirect(303, '/runners/login');
   }
   if (locals.user.role !== 'admin') {
     throw error(403, 'Forbidden: You do not have access to this page.');
