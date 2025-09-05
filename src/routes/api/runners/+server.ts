@@ -94,7 +94,7 @@ export async function POST({ request, locals }) {
     const safeRegToken = shellescape(registrationToken);
     const safeDesc = shellescape(uniqueDescription);
 
-    let registerCommand = `${runnerCmd} register --non-interactive --url ${safeUrl} --token ${safeRegToken} --description ${safeDesc} --executor shell`;
+    let registerCommand = `${runnerCmd} register --non-interactive --url ${safeUrl} -r ${safeRegToken} --description ${safeDesc} --executor shell`;
     if (tagList) {
         const safeTagList = shellescape(tagList);
         registerCommand += ` --tag-list ${safeTagList}`;
