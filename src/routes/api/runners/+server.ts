@@ -58,9 +58,15 @@ export async function GET({ locals }) {
     });
 
     const runnerCmd = getRunnerCommand();
-    const { stdout, stderr } = await execAsync(`${runnerCmd} list`);
-    const output = stdout || stderr;
-    const liveStatuses = parseRunnerStatus(output);
+    let liveStatuses: RunnerStatus[] = [];
+    try {
+      const { stdout, stderr } = await execAsync(`${runnerCmd} list`);
+      const output = stdout || stderr;
+      liveStatuses = parseRunnerStatus(output);
+    } catch (e) {
+      console.error('Failed to list runners:', e);
+      // liveStatuses remains empty, all runners will be offline
+    }
 
     const runnersWithStatus = userRunners.map((dbRunner) => {
       const liveRunner = liveStatuses.find((r) => r.token === dbRunner.token);

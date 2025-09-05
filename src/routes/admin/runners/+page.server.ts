@@ -55,9 +55,15 @@ export const load: PageServerLoad = async ({ locals }) => {
     }).from(runners).leftJoin(users, eq(runners.userId, users.id));
 
     const runnerCmd = getRunnerCommand();
-    const { stdout, stderr } = await execAsync(`${runnerCmd} list`);
-    const output = stdout || stderr;
-    const liveStatuses = parseRunnerStatus(output);
+    let liveStatuses: RunnerStatus[] = [];
+    try {
+      const { stdout, stderr } = await execAsync(`${runnerCmd} list`);
+      const output = stdout || stderr;
+      liveStatuses = parseRunnerStatus(output);
+    } catch (e) {
+      console.error('Failed to list runners:', e);
+      // liveStatuses remains empty, all runners will be offline
+    }
 
     const runnersWithStatus = allRunners.map((dbRunner) => {
       const liveRunner = liveStatuses.find((r) => r.token === dbRunner.token);
