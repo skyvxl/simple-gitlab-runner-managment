@@ -3,7 +3,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { db } from '$lib/server/db';
 import { runners } from '$lib/server/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+import { shellescape } from '$lib/server/utils';
 
 const execAsync = promisify(exec);
 
@@ -88,8 +89,16 @@ export async function POST({ request, locals }) {
     const tagList = tags ? tags.split(',').map((t: string) => t.trim()).join(',') : '';
 
     const runnerCmd = getRunnerCommand();
-    let registerCommand = `${runnerCmd} register --non-interactive --url "${url}" --token "${registrationToken}" --description "${uniqueDescription}" --executor shell`;
-    if (tagList) registerCommand += ` --tag-list "${tagList}"`;
+
+    const safeUrl = shellescape(url);
+    const safeRegToken = shellescape(registrationToken);
+    const safeDesc = shellescape(uniqueDescription);
+
+    let registerCommand = `${runnerCmd} register --non-interactive --url ${safeUrl} --token ${safeRegToken} --description ${safeDesc} --executor shell`;
+    if (tagList) {
+        const safeTagList = shellescape(tagList);
+        registerCommand += ` --tag-list ${safeTagList}`;
+    }
 
     await execAsync(registerCommand);
 
@@ -101,7 +110,7 @@ export async function POST({ request, locals }) {
 
     if (!newRunner) {
       // Cleanup failed registration
-      await execAsync(`${runnerCmd} unregister --description "${uniqueDescription}"`);
+      await execAsync(`${runnerCmd} unregister --description ${safeDesc}`);
       return json({ error: 'Failed to find the newly registered runner to save it.' }, { status: 500 });
     }
 
@@ -120,7 +129,8 @@ export async function POST({ request, locals }) {
 }
 
 export async function DELETE({ request, locals }) {
-  if (!locals.user) {
+  const user = locals.user;
+  if (!user) {
     return json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -128,15 +138,21 @@ export async function DELETE({ request, locals }) {
     const { id } = await request.json(); // We'll use the database ID for deletion
 
     const runnerToDelete = await db.query.runners.findFirst({
-      where: and(eq(runners.id, id), eq(runners.userId, locals.user.id)),
+      where: eq(runners.id, id),
     });
 
     if (!runnerToDelete) {
-      return json({ error: 'Runner not found or you do not have permission to delete it' }, { status: 404 });
+      return json({ error: 'Runner not found' }, { status: 404 });
+    }
+
+    // Admin can delete any runner, users can only delete their own
+    if (user.role !== 'admin' && runnerToDelete.userId !== user.id) {
+        return json({ error: 'You do not have permission to delete this runner' }, { status: 403 });
     }
 
     const runnerCmd = getRunnerCommand();
-    const command = `${runnerCmd} unregister --token "${runnerToDelete.token}"`;
+    const safeToken = shellescape(runnerToDelete.token);
+    const command = `${runnerCmd} unregister --token ${safeToken}`;
     await execAsync(command);
 
     await db.delete(runners).where(eq(runners.id, id));

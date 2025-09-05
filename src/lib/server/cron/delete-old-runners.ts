@@ -4,6 +4,7 @@ import { runners, users } from '$lib/server/db/schema';
 import { eq, lt } from 'drizzle-orm';
 import { promisify } from 'util';
 import { exec } from 'child_process';
+import { shellescape } from '$lib/server/utils';
 
 const execAsync = promisify(exec);
 const getRunnerCommand = () => 'gitlab-runner';
@@ -34,7 +35,8 @@ async function deleteOldRunners() {
       console.log(`Deleting old runner ID: ${runner.id}`);
       try {
         const runnerCmd = getRunnerCommand();
-        const command = `${runnerCmd} unregister --token "${runner.token}"`;
+        const safeToken = shellescape(runner.token);
+        const command = `${runnerCmd} unregister --token ${safeToken}`;
         await execAsync(command);
         console.log(`Successfully unregistered runner ID: ${runner.id}`);
 

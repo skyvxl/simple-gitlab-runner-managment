@@ -3,9 +3,9 @@
   import { resolve } from '$app/paths';
   import { Button, TextField, Snackbar } from 'm3-svelte';
 
-  let username = $state('');
-  let password = $state('');
-  let loading = $state(false);
+  let username = $state<string>('');
+  let password = $state<string>('');
+  let loading = $state<boolean>(false);
   let error = $state<string | null>(null);
   let snackbar: ReturnType<typeof Snackbar>;
 
